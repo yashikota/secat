@@ -1,0 +1,31 @@
+---
+# YAML config
+app:
+  name: xxx***********
+  debug: t***
+  port: 8***
+database:
+  url: "post*************************"
+  password: 'xxxx************'
+  options: {}
+  empty:
+  comment: xxx********** # note
+tokens:
+  - xxxx************
+  - "xxxx************"
+  - name: xxxx**************
+    key: xxxx*************
+certificate: |
+  ***************************
+  **************
+  *************************
+description: >-
+  *************
+  ***********
+
+notes:
+  - |
+    *****************
+  - xxx************
+inline: [xxx******************
+url: http**************************

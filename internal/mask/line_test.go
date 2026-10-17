@@ -25,6 +25,9 @@ func TestLine(t *testing.T) {
 		{"yaml list open", `list: [`, `list: [`},
 		{"url without delimiter", `url http://example.com`, `url http://example.com`},
 		{"yaml doc separator", `---`, `---`},
+		{"unterminated quoted key", `"abc: def`, `"abc: def`},
+		{"export alone", `export `, `export `},
+		{"key named export", `export=abcdefgh`, `export=ab******`},
 
 		// env
 		{"env", `PORT=3000`, `PORT=3***`},
@@ -65,6 +68,9 @@ func TestLine(t *testing.T) {
 		{"yaml list open map", `- {`, `- {`},
 		{"yaml list comment", `- # note`, `- # note`},
 		{"yaml inline array", `keys: [abc, defgh]`, `keys: [ab*********`},
+		{"yaml empty map", `options: {}`, `options: {}`},
+		{"json empty object", `  "o": {},`, `  "o": {},`},
+		{"json empty array", `  "a": [ ]`, `  "a": [ ]`},
 
 		// json
 		{"json string", `  "token": "abcdefgh",`, `  "token": "ab******",`},

@@ -1,0 +1,10 @@
+# Java properties
+app.name=xxxxSECRETapp
+app.version = 1.2.3
+db.password: xxxxSECRETpassword
+db.url=jdbc:mysql://localhost:3306/xxxxSECRET
+! bang comments are not recognised and stay as-is
+long.value=xxxxSECRETfirst \
+    SECRETsecond \
+    SECRETthird
+next.key=xxxxSECRETnext

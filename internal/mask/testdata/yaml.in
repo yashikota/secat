@@ -1,0 +1,31 @@
+---
+# YAML config
+app:
+  name: xxxxSECRETname
+  debug: true
+  port: 8080
+database:
+  url: "postgres://xxxxSECRET@host/db"
+  password: 'xxxxSECRETsingle'
+  options: {}
+  empty:
+  comment: xxxxSECRETval # note
+tokens:
+  - xxxxSECRETtoken1
+  - "xxxxSECRETtoken2"
+  - name: xxxxSECRETlistname
+    key: xxxxSECRETlistkey
+certificate: |
+  -----BEGIN CERTIFICATE-----
+  SECRETMIIBline
+  -----END CERTIFICATE-----
+description: >-
+  SECRET folded
+  SECRET text
+
+notes:
+  - |
+    SECRET item block
+  - xxxxSECRETafter
+inline: [xxxxSECRETa, SECRETb]
+url: https://xxxxSECRET.example.com

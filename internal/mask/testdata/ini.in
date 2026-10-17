@@ -1,0 +1,14 @@
+; database configuration
+[database]
+host = db.internal
+port = 5432
+user = admin
+password = xxxxSECRETdbpass
+
+[api]
+key = "xxxxSECRETapikey"
+timeout=30
+# disabled = true
+
+[empty]
+value =

@@ -1,0 +1,20 @@
+# TOML config
+title = "xxx************"
+debug = f****
+
+[server]
+host = "0******"
+port = 8***
+token = 'xxxx*************'
+
+[database.primary]
+password = """
+****************
+*******************
+"""
+cert = '''xx********
+*******************'''
+
+[[users]]
+name = "xxx************"
+api.key = "xxxx************"

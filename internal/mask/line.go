@@ -194,8 +194,9 @@ func (m *Masker) value(v string, trailingComma bool) string {
 	}
 	if v[0] == '{' || v[0] == '[' {
 		// An opener alone starts a block whose members follow on later lines.
+		// An empty {} or [] holds nothing to hide.
 		after := strings.TrimSpace(v[1:])
-		if after == "" || strings.HasPrefix(after, "#") {
+		if after == "" || strings.HasPrefix(after, "#") || isEmptyStructure(v) {
 			return v
 		}
 	}
@@ -258,6 +259,17 @@ func inlineComment(v string) int {
 		}
 	}
 	return -1
+}
+
+// isEmptyStructure reports whether v is {} or [] (inner spaces and a trailing
+// ',' allowed).
+func isEmptyStructure(v string) bool {
+	v = strings.TrimSuffix(strings.TrimSpace(v), ",")
+	if len(v) < 2 {
+		return false
+	}
+	pair := string(v[0]) + string(v[len(v)-1])
+	return (pair == "{}" || pair == "[]") && strings.TrimSpace(v[1:len(v)-1]) == ""
 }
 
 func isComment(trimmed string) bool {

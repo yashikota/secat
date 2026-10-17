@@ -1,0 +1,10 @@
+# Java properties
+app.name=xxx**********
+app.version = 1****
+db.password: xxxx**************
+db.url=jdbc**********************************
+! bang comments are not recognised and stay as-is
+long.value=xxxx*************
+    **************
+    ***********
+next.key=xxx***********

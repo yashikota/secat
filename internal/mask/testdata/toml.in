@@ -1,0 +1,20 @@
+# TOML config
+title = "xxxxSECRETtitle"
+debug = false
+
+[server]
+host = "0.0.0.0"
+port = 8080
+token = 'xxxxSECRETliteral'
+
+[database.primary]
+password = """
+xxxxSECRET multi
+SECRET basic string
+"""
+cert = '''xxxxSECRET
+SECRETliteral block'''
+
+[[users]]
+name = "xxxxSECRETalice"
+api.key = "xxxxSECRETdotted"

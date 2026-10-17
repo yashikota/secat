@@ -1,0 +1,14 @@
+; database configuration
+[database]
+host = db*********
+port = 5***
+user = a****
+password = xxxx************
+
+[api]
+key = "xxxx************"
+timeout=**
+# disabled = true
+
+[empty]
+value =

@@ -1,0 +1,22 @@
+{
+  "name": "xxxxSECRETname",
+  "port": 8080,
+  "debug": false,
+  "nothing": null,
+  "database": {
+    "user": "admin",
+    "password": "xxxx\"SECRET\"pw",
+    "replicas": [
+      "xxxxSECRETreplica1",
+      "xxxxSECRETreplica2"
+    ]
+  },
+  "empty": "",
+  "ids": [
+    12345678,
+    87654321
+  ],
+  "inline": ["xxxxSECRETinline"],
+  "emptyObject": {},
+  "url": "https://xxxxSECRET.example.com/path?x=1"
+}
