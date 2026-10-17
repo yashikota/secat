@@ -51,9 +51,9 @@ var multilineCases = []struct {
 		secrets: []string{"efgh"},
 	},
 	{
-		name: "single quote spans lines",
-		in:   []string{`K='abcd`, `secretline'`, `N=abcdefgh`},
-		want: []string{`K='a***`, Full("secretline") + `'`, `N=ab******`},
+		name:    "single quote spans lines",
+		in:      []string{`K='abcd`, `secretline'`, `N=abcdefgh`},
+		want:    []string{`K='a***`, Full("secretline") + `'`, `N=ab******`},
 		secrets: []string{"secretline"},
 	},
 	{
@@ -91,21 +91,21 @@ var multilineCases = []struct {
 		secrets: []string{"foldedsecret"},
 	},
 	{
-		name: "yaml block with indicators and comment",
-		in:   []string{`k: |+2 # keep`, `  kept`, `z: abcdefgh`},
-		want: []string{`k: |+2 # keep`, Full("  kept"), `z: ab******`},
+		name:    "yaml block with indicators and comment",
+		in:      []string{`k: |+2 # keep`, `  kept`, `z: abcdefgh`},
+		want:    []string{`k: |+2 # keep`, Full("  kept"), `z: ab******`},
 		secrets: []string{"kept"},
 	},
 	{
-		name: "yaml block in list mapping",
-		in:   []string{`- k: |`, `    vsecret`, `- o: abcdefgh`},
-		want: []string{`- k: |`, Full("    vsecret"), `- o: ab******`},
+		name:    "yaml block in list mapping",
+		in:      []string{`- k: |`, `    vsecret`, `- o: abcdefgh`},
+		want:    []string{`- k: |`, Full("    vsecret"), `- o: ab******`},
 		secrets: []string{"vsecret"},
 	},
 	{
-		name: "yaml block as list item",
-		in:   []string{`items:`, `  - |`, `    itemsecret`, `  - abcdefgh`},
-		want: []string{`items:`, `  - |`, Full("    itemsecret"), `  - ab******`},
+		name:    "yaml block as list item",
+		in:      []string{`items:`, `  - |`, `    itemsecret`, `  - abcdefgh`},
+		want:    []string{`items:`, `  - |`, Full("    itemsecret"), `  - ab******`},
 		secrets: []string{"itemsecret"},
 	},
 	{
@@ -136,15 +136,15 @@ var multilineCases = []struct {
 		secrets: []string{"MIIBsecret"},
 	},
 	{
-		name: "toml multiline basic string",
-		in:   []string{`s = """`, `secretline`, `"""`, `t = 1234`},
-		want: []string{`s = """`, Full("secretline"), `"""`, `t = 1***`},
+		name:    "toml multiline basic string",
+		in:      []string{`s = """`, `secretline`, `"""`, `t = 1234`},
+		want:    []string{`s = """`, Full("secretline"), `"""`, `t = 1***`},
 		secrets: []string{"secretline"},
 	},
 	{
-		name: "toml multiline literal string",
-		in:   []string{`s = '''abcd`, `secretline'''`, `t = 1234`},
-		want: []string{`s = '''a***`, Full("secretline") + `'''`, `t = 1***`},
+		name:    "toml multiline literal string",
+		in:      []string{`s = '''abcd`, `secretline'''`, `t = 1234`},
+		want:    []string{`s = '''a***`, Full("secretline") + `'''`, `t = 1***`},
 		secrets: []string{"secretline"},
 	},
 	{
@@ -153,9 +153,9 @@ var multilineCases = []struct {
 		want: []string{`s = """ab******"""`, `t = 1***`},
 	},
 	{
-		name: "backslash continuation",
-		in:   []string{`KEY=abc\`, `def\`, `ghi`, `N=abcdefgh`},
-		want: []string{`KEY=a***`, Full(`def\`), Full("ghi"), `N=ab******`},
+		name:    "backslash continuation",
+		in:      []string{`KEY=abc\`, `def\`, `ghi`, `N=abcdefgh`},
+		want:    []string{`KEY=a***`, Full(`def\`), Full("ghi"), `N=ab******`},
 		secrets: []string{"def", "ghi"},
 	},
 	{
