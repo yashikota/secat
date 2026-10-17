@@ -6,12 +6,33 @@ import (
 	"strings"
 )
 
-// sectionRe matches INI/TOML section headers such as [default] or [[servers]].
-var sectionRe = regexp.MustCompile(`^\[\[?[^\[\],]+\]\]?$`)
+var (
+	// sectionRe matches INI/TOML section headers such as [default] or [[servers]].
+	sectionRe = regexp.MustCompile(`^\[\[?[^\[\],]+\]\]?$`)
+	// blockRe matches a YAML block scalar header such as |, >-, or |+2 # note.
+	blockRe = regexp.MustCompile(`^[|>][0-9]?[+-]?[0-9]?\s*(#.*)?$`)
+)
 
-// Masker masks one line at a time. Use one Masker per file.
+type state int
+
+const (
+	stateNone         state = iota
+	stateQuote              // inside a quoted value that did not close on its line
+	stateYAMLBlock          // inside a YAML block scalar
+	statePEM                // between -----BEGIN and -----END
+	stateContinuation       // after an unquoted value ending in a backslash
+)
+
+// Masker masks one line at a time, carrying multi-line values across lines.
+// Use one Masker per file.
 type Masker struct {
-	opts Options
+	opts  Options
+	state state
+	// closer is the quote that ends stateQuote.
+	closer string
+	// indent is the width of the current line's leading whitespace; in
+	// stateYAMLBlock it is the indent of the line that opened the block.
+	indent int
 }
 
 // NewMasker returns a Masker that masks values with o.
@@ -21,17 +42,64 @@ func NewMasker(o Options) *Masker {
 
 // Line masks the values in line, which must not contain a line terminator.
 func (m *Masker) Line(line string) string {
+	switch m.state {
+	case stateQuote:
+		i := findCloser(line, m.closer)
+		if i < 0 {
+			return Full(line)
+		}
+		m.state = stateNone
+		return Full(line[:i]) + line[i:]
+	case stateYAMLBlock:
+		body := strings.TrimLeft(line, " \t")
+		if body == "" {
+			return line
+		}
+		if len(line)-len(body) > m.indent {
+			return Full(line)
+		}
+		m.state = stateNone
+	case statePEM:
+		if strings.Contains(line, "-----END") {
+			m.state = stateNone
+		}
+		return Full(line)
+	case stateContinuation:
+		if !strings.HasSuffix(strings.TrimRight(line, " \t"), `\`) {
+			m.state = stateNone
+		}
+		return Full(line)
+	}
+
+	out := m.parse(line)
+	if m.state == stateNone && strings.Contains(line, "-----BEGIN") && !strings.Contains(line, "-----END") {
+		m.state = statePEM
+	}
+	return out
+}
+
+func (m *Masker) parse(line string) string {
 	trimmed := strings.TrimSpace(line)
+	if strings.HasPrefix(trimmed, "-----BEGIN") {
+		return Full(line)
+	}
 	if trimmed == "" || isComment(trimmed) || isStructural(trimmed) {
 		return line
 	}
 
 	body := strings.TrimLeft(line, " \t")
 	prefix := line[:len(line)-len(body)]
+	m.indent = len(prefix)
 
 	if strings.HasPrefix(body, "- ") {
 		item := strings.TrimLeft(body[1:], " \t")
+		if blockRe.MatchString(item) {
+			// The block belongs to the item, so its lines are indented past the dash.
+			m.state = stateYAMLBlock
+			return line
+		}
 		prefix += body[:len(body)-len(item)]
+		m.indent = len(prefix)
 		if out, ok := m.keyValue(item); ok {
 			return prefix + out
 		}
@@ -86,6 +154,10 @@ func (m *Masker) keyValue(s string) (string, bool) {
 	for v < len(s) && (s[v] == ' ' || s[v] == '\t') {
 		v++
 	}
+	if s[sep] == ':' && blockRe.MatchString(s[v:]) {
+		m.state = stateYAMLBlock
+		return s, true
+	}
 	jsonKey := quotedKey && s[start] == '"'
 	return s[:v] + m.value(s[v:], jsonKey), true
 }
@@ -128,10 +200,16 @@ func (m *Masker) value(v string, trailingComma bool) string {
 		}
 	}
 	if q := v[0]; q == '"' || q == '\'' || q == '`' {
-		if i := closingQuote(v, q); i > 0 {
-			return string(q) + Value(v[1:i], m.opts) + v[i:]
+		closer := string(q)
+		if strings.HasPrefix(v, `"""`) || strings.HasPrefix(v, `'''`) {
+			closer = v[:3]
 		}
-		return string(q) + Value(v[1:], m.opts)
+		inner := v[len(closer):]
+		if i := findCloser(inner, closer); i >= 0 {
+			return closer + Value(inner[:i], m.opts) + inner[i:]
+		}
+		m.state, m.closer = stateQuote, closer
+		return closer + Value(inner, m.opts)
 	}
 
 	core, suffix := v, ""
@@ -143,19 +221,30 @@ func (m *Masker) value(v string, trailingComma bool) string {
 	if trailingComma && strings.HasSuffix(core, ",") {
 		core, suffix = core[:len(core)-1], ","+suffix
 	}
+	if strings.HasSuffix(core, `\`) && strings.TrimSpace(suffix) == "" {
+		m.state = stateContinuation
+	}
 	return Value(core, m.opts) + suffix
 }
 
-// closingQuote returns the index in s of the quote closing s[0], or -1.
-// Backslash escapes are honored only inside double quotes.
-func closingQuote(s string, q byte) int {
-	for i := 1; i < len(s); i++ {
+// findCloser returns the index of the first closer in s, or -1.
+// Backslash escapes are honored only for double-quote closers.
+func findCloser(s, closer string) int {
+	for i := 0; i < len(s); i++ {
 		switch {
-		case s[i] == '\\' && q == '"':
+		case s[i] == '\\' && closer[0] == '"':
 			i++
-		case s[i] == q:
+		case strings.HasPrefix(s[i:], closer):
 			return i
 		}
+	}
+	return -1
+}
+
+// closingQuote returns the index in s of the quote closing s[0], or -1.
+func closingQuote(s string, q byte) int {
+	if i := findCloser(s[1:], string(q)); i >= 0 {
+		return i + 1
 	}
 	return -1
 }
