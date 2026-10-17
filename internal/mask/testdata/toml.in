@@ -18,3 +18,7 @@ SECRETliteral block'''
 [[users]]
 name = "xxxxSECRETalice"
 api.key = "xxxxSECRETdotted"
+users = [
+  { name = "alice", password = "xxxxSECRETinline" },
+]
+servers."alpha".token = "xxxxSECRETquotedkey"

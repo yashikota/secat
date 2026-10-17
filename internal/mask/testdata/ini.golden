@@ -12,3 +12,4 @@ timeout=**
 
 [empty]
 value =
+db password = xxxx************

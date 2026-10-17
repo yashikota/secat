@@ -159,6 +159,18 @@ var multilineCases = []struct {
 		secrets: []string{"def", "ghi"},
 	},
 	{
+		name:    "yaml block with tag",
+		in:      []string{`key: !!binary |`, `  R0lGODlhsecret`, `password: !vault |`, `  $ANSIBLE_VAULT;1.1;AES256`, `  6231secret`, `n: abcdefgh`},
+		want:    []string{`key: !!binary |`, Full("  R0lGODlhsecret"), `password: !vault |`, Full("  $ANSIBLE_VAULT;1.1;AES256"), Full("  6231secret"), `n: ab******`},
+		secrets: []string{"R0lGODlhsecret", "ANSIBLE_VAULT", "6231secret"},
+	},
+	{
+		name:    "yaml block with anchor",
+		in:      []string{`tls: &cert |`, `  anchoredsecret`, `- !tag >-`, `  itemsecret`},
+		want:    []string{`tls: &cert |`, Full("  anchoredsecret"), `- !tag >-`, Full("  itemsecret")},
+		secrets: []string{"anchoredsecret", "itemsecret"},
+	},
+	{
 		name: "pipe value in env is not a yaml block",
 		in:   []string{`K=|`, `NEXT=abcdefgh`},
 		want: []string{`K=*`, `NEXT=ab******`},

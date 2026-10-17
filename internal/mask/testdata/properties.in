@@ -8,3 +8,5 @@ long.value=xxxxSECRETfirst \
     SECRETsecond \
     SECRETthird
 next.key=xxxxSECRETnext
+db.user:xxxxSECRETnospace
+app.users[0].password=xxxxSECRETindexed

@@ -12,3 +12,4 @@ timeout=30
 
 [empty]
 value =
+db password = xxxxSECRETspaced

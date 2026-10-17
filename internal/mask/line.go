@@ -9,8 +9,12 @@ import (
 var (
 	// sectionRe matches INI/TOML section headers such as [default] or [[servers]].
 	sectionRe = regexp.MustCompile(`^\[\[?[^\[\],]+\]\]?$`)
-	// blockRe matches a YAML block scalar header such as |, >-, or |+2 # note.
-	blockRe = regexp.MustCompile(`^[|>][0-9]?[+-]?[0-9]?\s*(#.*)?$`)
+	// quotedArrayRe matches a one-element array of a quoted string, which
+	// sectionRe would otherwise take for a section.
+	quotedArrayRe = regexp.MustCompile(`^\[\[?\s*("[^"]*"|'[^']*')\s*\]\]?$`)
+	// blockRe matches a YAML block scalar header such as |, >-, |+2 # note, or
+	// one preceded by tags and anchors (!!binary |, &cert >).
+	blockRe = regexp.MustCompile(`^(?:(?:![^\s]*|&[^\s]+)\s+)*[|>][0-9]?[+-]?[0-9]?\s*(#.*)?$`)
 )
 
 type state int
@@ -100,6 +104,9 @@ func (m *Masker) parse(line string) string {
 		}
 		prefix += body[:len(body)-len(item)]
 		m.indent = len(prefix)
+		if item != "" && (item[0] == '{' || item[0] == '[') {
+			return prefix + m.value(item, true)
+		}
 		if out, ok := m.keyValue(item); ok {
 			return prefix + out
 		}
@@ -109,6 +116,10 @@ func (m *Masker) parse(line string) string {
 		return prefix + m.value(item, true)
 	}
 
+	if body[0] == '{' || body[0] == '[' {
+		// An inline table or array element, e.g. inside a multi-line array.
+		return prefix + m.value(body, true)
+	}
 	if out, ok := m.keyValue(body); ok {
 		return prefix + out
 	}
@@ -119,7 +130,8 @@ func (m *Masker) parse(line string) string {
 }
 
 // keyValue masks s if it has the form [export ]key<sep>value, where sep is
-// '=' or ':' followed by a space or the end of the line.
+// the first '=' or ':' in s. An unquoted key followed by "://" is a URL, not a
+// key.
 func (m *Masker) keyValue(s string) (string, bool) {
 	start := 0
 	if strings.HasPrefix(s, "export ") {
@@ -141,9 +153,7 @@ func (m *Masker) keyValue(s string) (string, bool) {
 	switch s[sep] {
 	case '=':
 	case ':':
-		// A quoted key is unambiguous, so compact JSON ("a":"b") is allowed.
-		next := sep + 1
-		if !quotedKey && next < len(s) && s[next] != ' ' && s[next] != '\t' {
+		if !quotedKey && strings.HasPrefix(s[sep+1:], "//") {
 			return "", false
 		}
 	default:
@@ -174,16 +184,18 @@ func scanKey(s string, start int) (end int, quoted bool) {
 		}
 		return start, false
 	}
-	end = start
-	for end < len(s) && isKeyChar(s[end]) {
-		end++
+	// Any text up to the first separator is a key, so keys with spaces,
+	// brackets, quoted parts or non-ASCII letters still have their values
+	// masked. Masking prose that happens to contain a separator is acceptable.
+	end = strings.IndexAny(s[start:], "=:")
+	if end < 0 {
+		return start, false
+	}
+	end += start
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\t') {
+		end--
 	}
 	return end, false
-}
-
-func isKeyChar(c byte) bool {
-	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' ||
-		c == '_' || c == '.' || c == '-' || c == '/'
 }
 
 // value masks a value as found after a key separator or as a bare element.
@@ -229,11 +241,14 @@ func (m *Masker) value(v string, trailingComma bool) string {
 }
 
 // findCloser returns the index of the first closer in s, or -1.
-// Backslash escapes are honored only for double-quote closers.
+// Backslash escapes are honored only for double-quote closers, and a doubled
+// ” (YAML's escaped single quote) does not close a single-quoted value.
 func findCloser(s, closer string) int {
 	for i := 0; i < len(s); i++ {
 		switch {
 		case s[i] == '\\' && closer[0] == '"':
+			i++
+		case closer == "'" && strings.HasPrefix(s[i:], "''"):
 			i++
 		case strings.HasPrefix(s[i:], closer):
 			return i
@@ -282,7 +297,7 @@ func isStructural(trimmed string) bool {
 	case "{", "}", "[", "]", "{}", "[]":
 		return true
 	}
-	return sectionRe.MatchString(trimmed)
+	return sectionRe.MatchString(trimmed) && !quotedArrayRe.MatchString(trimmed)
 }
 
 // isJSONScalar reports whether s is a lone JSON array element: a string,

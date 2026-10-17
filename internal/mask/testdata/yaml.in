@@ -29,3 +29,10 @@ notes:
   - xxxxSECRETafter
 inline: [xxxxSECRETa, SECRETb]
 url: https://xxxxSECRET.example.com
+binary: !!binary |
+  SECRETR0lGODlh
+vault: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  SECRET6231
+Database Password: xxxxSECRETspacekey
+quote: 'it''s xxxxSECRET'

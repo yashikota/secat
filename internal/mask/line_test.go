@@ -83,6 +83,24 @@ func TestLine(t *testing.T) {
 		{"json array string element", `  "tok-12345678",`, `  "tok*********",`},
 		{"json array number element", `  12345678`, `  12******`},
 		{"json array bool element", `  true,`, `  t***,`},
+
+		// keys outside [A-Za-z0-9_.-/]
+		{"indexed property key", `app.users[0].password=hunter2secret`, `app.users[0].password=hun**********`},
+		{"properties colon no space", `db.password:hunter2secret`, `db.password:hun**********`},
+		{"ini key with space", `db password = hunter2secret`, `db password = hun**********`},
+		{"yaml key with space", `Database Password: hunter2secret`, `Database Password: hun**********`},
+		{"toml quoted key part", `servers."alpha".token = "hunter2secret"`, `servers."alpha".token = "hun**********"`},
+		{"non-ascii yaml key", `パスワード: hunter2secret`, `パスワード: hun**********`},
+		{"url line stays", `see https://example.com/a=b`, `see https://example.com/a=b`},
+
+		// yaml '' escape
+		{"yaml single quote escape", `password: 'it''s-a-secret-value'`, `password: 'it''****************'`},
+		{"yaml empty single quoted", `k: ''`, `k: ''`},
+
+		// inline structures on their own line
+		{"toml inline table element", `  { name = "alice", password = "s3cretvalue" },`, `  { na****************************************,`},
+		{"nested array element", `  ["k1", "s3cretvalue"],`, `  ["k1*****************,`},
+		{"quoted single-element array", `["s3cretvalue"]`, `["s************`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

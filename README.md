@@ -70,4 +70,8 @@ Values that span lines are masked in full:
 
 - Minified (single-line) JSON is not masked.
 - A YAML plain scalar that continues onto the next line without quotes or a block indicator is masked only on its first line.
+- Plain items of a YAML flow sequence spread over several lines (`hosts: [` followed by `  a.example.com,`) are not masked.
+- INI continuation lines (an indented line continuing the previous value) are not masked.
+- Whitespace-separated properties (`key value`) are not recognized.
+- Text right after a closing quote (`KEY="abc"def`) is printed as is.
 - Values are masked whatever the key is, so non-secret values such as `PORT` are masked too.
